@@ -1,0 +1,83 @@
+
+version: '3'
+services: 
+  db: # Tested
+    image: mysql
+    command:
+      --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_USER: root
+      MYSQL_ROOT_PASSWORD: Verkada123
+      MYSQL_DATABASE: camera
+      MYSQL_HOST: db
+      MYSQL_TCP_PORT: 3306
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"    
+
+  redis: # Tested
+    build: ./redis
+    ports:
+      - "6379:6379" 
+    expose:
+      - "6379"   
+
+  server: # Tested Separately 
+    build: ./server 
+    ports:
+      - "5000:5000" 
+    expose:
+      - "5000"    
+    depends_on:
+      - redis 
+      - db
+    links:
+      - db
+      - redis 
+ 
+  proxy: # Tested
+    build: ./proxy 
+    ports:
+      - "7999:7999"
+      - "5561:5561"
+    expose:
+      - "7999"   
+      - "5561"
+    depends_on:
+      - server  
+
+  camera1: # Tested Separately 
+    build: ./camera/camera1 
+    depends_on:
+      - proxy
+    links:
+      - proxy  
+
+  camera2: # Tested Separately 
+    build: ./camera/camera2 
+    depends_on:
+      - proxy
+    links:
+      - proxy   
+
+  camera3: # Tested Separately    
+    build: ./camera/camera3 
+    depends_on:
+      - proxy
+    links:
+      - proxy   
+
+  web:  # Tested
+    build: ./web 
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"  
+    depends_on:
+      - camera1
+      - camera2
+      - camera3
+    links:
+      - proxy     
